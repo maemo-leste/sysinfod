@@ -11,6 +11,8 @@
 #include "sysinfo.h"
 #include "entry.h"
 
+/* #define SYSINFO_CERTIFICATES */
+
 struct sysinfo_certificate
 {
   char *name;
@@ -302,7 +304,7 @@ sysinfo_init(struct system_config **sc_out)
       {
         entry_append_child(&sc->root_entry, entry);
         add_compver_entries(sc);
-#if 0
+#if SYSINFO_CERTIFICATES
         /* so far not needed */
         add_cert_entries(sc);
 #endif
@@ -320,4 +322,71 @@ sysinfo_init(struct system_config **sc_out)
   free(sc);
 
   return -1;
+}
+
+void
+sysinfo_finish(struct system_config *sc)
+{
+  sysinfo_trace(SYSINFO_INFO, "De-initializing configuration");
+  remove_config_entry(sc->root_entry);
+#if SYSINFO_CERTIFICATES
+  free_cert_data((sysinfo_certificate *)sc);
+#endif
+
+  if (sc->ssc)
+    scconf_free(sc->ssc);
+
+  free(sc);
+}
+
+static int
+get_count_cb(void *count, system_config_entry *entry)
+{
+  if (entry->get_value)
+    ++*(int *)count;
+
+  return 0;
+}
+
+static int
+get_keys_cb(void *userdata, system_config_entry *entry)
+{
+  char ***keys_out = userdata;
+  char *entry_key;
+
+  if (!entry->get_value)
+    return 0;
+
+  entry_key = entry_get_key(entry);
+
+  **keys_out = entry_key;
+
+  if (entry_key)
+  {
+    (*keys_out)++;
+    return 0;
+  }
+
+  return -ENOMEM;
+}
+
+int
+sysinfo_get_keys(struct system_config *sc, char ***keys_out)
+{
+  char **out;
+  int count = 0;
+
+  entry_enumerate_children(sc->root_entry->children, get_count_cb, &count);
+
+  out = calloc(sizeof(char *), count + 1);
+
+  if (!out)
+    return -ENOMEM;
+
+  if (entry_enumerate_children(sc->root_entry->children, get_keys_cb, &out) < 0)
+    return -ENOMEM;
+
+  *keys_out = out;
+
+  return 0;
 }

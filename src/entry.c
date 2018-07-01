@@ -5,7 +5,7 @@
 #include "sysinfo.h"
 #include "entry.h"
 
-static char *
+char *
 entry_get_key(system_config_entry *entry)
 {
   int len = 0;
@@ -157,7 +157,7 @@ alloc_str_entry(const char *name, const char *value)
   return alloc_strn_entry(name, value, strlen(value));
 }
 
-static int
+int
 entry_enumerate_children(system_config_entry *entry,
                          int (*cb)(void *, system_config_entry *),
                          void *user_data)

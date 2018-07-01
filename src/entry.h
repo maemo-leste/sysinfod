@@ -23,5 +23,7 @@ void add_config_entry(system_config_entry *parent, system_config_entry *entry);
 int remove_config_entry(system_config_entry *entry);
 system_config_entry *alloc_strn_entry(const char *name, const char *value, size_t len);
 system_config_entry *alloc_str_entry(const char *name, const char *value);
+int entry_enumerate_children(system_config_entry *entry, int (*cb)(void *, system_config_entry *), void *user_data);
+char *entry_get_key(system_config_entry *entry);
 
 #endif // ENTRY_H
