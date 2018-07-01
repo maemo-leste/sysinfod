@@ -18,5 +18,6 @@ struct system_config_entry
 
 system_config_entry *alloc_config_entry(const char *name);
 void entry_append_child(system_config_entry **entry, system_config_entry *child);
+void add_config_entry(system_config_entry *parent, system_config_entry *entry);
 
 #endif // ENTRY_H

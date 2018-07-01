@@ -36,6 +36,16 @@ struct system_config;
 #define SYSINFO_TRACE 2
 #define SYSINFO_DEBUG 3
 
+struct cal_phone_info
+{
+  char hw_version[5];
+  char production_sn[10];
+  char product_code[8];
+  char order_number[8];
+  char basic_product_code[8];
+  char unk[3];
+} __attribute__((packed));
+
 int  sysinfo_init      (struct system_config **sc_out);
 void sysinfo_finish    (struct system_config *sc);
 int  sysinfo_get_keys  (struct system_config *sc, char ***keys_out);

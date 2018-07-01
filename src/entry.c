@@ -73,3 +73,13 @@ alloc_config_entry(const char *name)
 
   return entry;
 }
+
+void
+add_config_entry(system_config_entry *parent, system_config_entry *entry)
+{
+
+  assert(parent != NULL);
+
+  entry->parent = parent;
+  entry_append_child(&parent->children, entry);
+}
