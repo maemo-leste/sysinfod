@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 
 #include "sysinfo.h"
 #include "entry.h"
@@ -75,6 +76,18 @@ alloc_config_entry(const char *name)
 }
 
 void
+free_config_entry(system_config_entry *entry)
+{
+  if (entry->free)
+    entry->free(entry);
+
+  if ( entry->name )
+    free(entry->name);
+
+  free(entry);
+}
+
+void
 add_config_entry(system_config_entry *parent, system_config_entry *entry)
 {
 
@@ -82,4 +95,58 @@ add_config_entry(system_config_entry *parent, system_config_entry *entry)
 
   entry->parent = parent;
   entry_append_child(&parent->children, entry);
+}
+
+static int
+simple_entry_get_value(system_config_entry *entry, void **val, size_t *len)
+{
+  size_t l = strlen((const char *)entry->data);
+
+  sysinfo_trace(SYSINFO_TRACE, "%s: Read string (%s)", entry->name,
+                (char *)entry->data);
+  *val = malloc(l);
+
+  if (!*val)
+    return -ENOMEM;
+
+  memcpy(*val, entry->data, l);
+
+  *len = l;
+
+  return 0;
+}
+
+static void
+simple_entry_free(system_config_entry *entry)
+{
+  free(entry->data);
+}
+
+system_config_entry *
+alloc_strn_entry(const char *name, const char *value, size_t len)
+{
+  system_config_entry *entry;
+
+  assert(name != NULL);
+  assert(value != NULL);
+
+  entry = alloc_config_entry(name);
+
+  if (!entry)
+    return NULL;
+
+  entry->data = strndup(value, len);
+
+  if (entry->data)
+  {
+    entry->get_value = simple_entry_get_value;
+    entry->free = simple_entry_free;
+  }
+  else
+  {
+    free_config_entry(entry);
+    entry = NULL;
+  }
+
+  return entry;
 }

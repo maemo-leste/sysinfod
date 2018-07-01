@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <cal.h>
 #include <scconf.h>
 
 #include "sysinfo.h"
@@ -168,7 +169,6 @@ int
 sysinfo_init(struct system_config **sc_out)
 {
   struct system_config *sc = calloc(1, sizeof(struct system_config));
-  scconf_context *ssc;
   struct system_config_entry *entry;
 
   sysinfo_trace(SYSINFO_INFO, "Initializing configuration");
@@ -178,16 +178,15 @@ sysinfo_init(struct system_config **sc_out)
 
   sc->ssc = scconf_new("/etc/sysinfod.conf");
 
-  if (ssc)
+  if (sc->ssc)
   {
-    if (scconf_parse(ssc) <= 0)
+    if (scconf_parse(sc->ssc) <= 0)
     {
-      scconf_free(ssc);
+      scconf_free(sc->ssc);
       sc->ssc = NULL;
     }
     else
     {
-      sc->ssc = ssc;
       entry = calloc(1, sizeof(struct system_config_entry));
 
       if (entry)
