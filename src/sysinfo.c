@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include <cal.h>
 #include <scconf.h>
@@ -163,6 +165,74 @@ add_devinfo_entries(struct system_config *sc)
   add_config_entry(device_entry, entry);
 
   return 0;
+}
+
+static int
+add_compver_entries(struct system_config *sc)
+{
+  system_config_entry *component_entry;
+  char comp_ver_buf[1024];
+  int res = 0;
+  FILE *fp = fopen("/proc/component_version", "r");
+
+  if (!fp)
+    return -errno;
+
+  component_entry = alloc_config_entry("component");
+
+  if (!component_entry)
+  {
+    res = -ENOMEM;
+    goto out;
+  }
+
+  add_config_entry(sc->root_entry, component_entry);
+
+  while (fgets(comp_ver_buf, sizeof(comp_ver_buf), fp))
+  {
+    system_config_entry *entry;
+    char *name;
+    char *p;
+    char *val;
+
+    if (strlen(comp_ver_buf) == 1023) /* WTF? */
+    {
+      res = -EINVAL;
+      remove_config_entry(component_entry);
+      goto out;
+    }
+
+    name = strtok(comp_ver_buf, " \t\n\r");
+
+    if (!name)
+      continue;
+
+    p = &name[strlen(name) + 1];
+
+    while (*p && isspace(*p))
+      p++;
+
+    val = strtok(p, "\n\r");
+
+    if (val)
+      entry = alloc_str_entry(name, val);
+    else
+      entry = alloc_str_entry(name, "");
+
+    if (!entry)
+    {
+      res = -ENOMEM;
+      remove_config_entry(component_entry);
+      goto out;
+    }
+
+    add_config_entry(component_entry, entry);
+  }
+
+out:
+  fclose(fp);
+
+  return res;
 }
 
 int

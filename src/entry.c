@@ -150,3 +150,114 @@ alloc_strn_entry(const char *name, const char *value, size_t len)
 
   return entry;
 }
+
+system_config_entry *
+alloc_str_entry(const char *name, const char *value)
+{
+  return alloc_strn_entry(name, value, strlen(value));
+}
+
+static int
+entry_enumerate_children(system_config_entry *entry,
+                         int (*cb)(void *, system_config_entry *),
+                         void *user_data)
+{
+  system_config_entry *children;
+  int res;
+  system_config_entry *next;
+
+  if (!entry)
+    return 0;
+
+  while (1)
+  {
+    children = entry->children;
+
+    if (children)
+    {
+      res = entry_enumerate_children(children, cb, user_data);
+
+      if (res < 0)
+        break;
+    }
+
+    next = entry->next;
+    res = cb(user_data, entry);
+    entry = next;
+
+    if (res < 0)
+      break;
+
+    if (!next)
+      return 0;
+  }
+
+  return res;
+}
+
+static int
+deallocate_cb(void *userdata, system_config_entry *entry)
+{
+  char *key = entry_get_key(entry);
+
+  if (key)
+  {
+    sysinfo_trace(SYSINFO_TRACE, "Deallocating config key '%s'", key);
+    free(key);
+  }
+
+  free_config_entry(entry);
+
+  return 0;
+}
+
+int
+remove_config_entry(system_config_entry *entry)
+{
+  char *key = entry_get_key(entry);
+  system_config_entry *parent;
+
+  if (key)
+  {
+    sysinfo_trace(SYSINFO_INFO, "Removing config key '%s' and children", key);
+    free(key);
+  }
+
+  parent = entry->parent;
+
+  if (parent)
+  {
+    system_config_entry *child = parent->children;
+    system_config_entry *next;
+
+    if (child == entry)
+      parent->children = entry->next;
+    else if (child)
+    {
+      next = child->next;
+
+      if (next == entry)
+      {
+        next = child;
+        next->next = entry->next;
+      }
+      else
+      {
+        while (next)
+        {
+          if (next->next == entry)
+          {
+            next->next = entry->next;
+            break;
+          }
+          else
+            next = next->next;
+        }
+      }
+    }
+  }
+
+  entry->next = NULL;
+
+  return entry_enumerate_children(entry, deallocate_cb, NULL);
+}
