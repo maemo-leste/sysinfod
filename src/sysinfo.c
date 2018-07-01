@@ -27,7 +27,18 @@ struct system_config
   sysinfo_certificate *certs;
 };
 
+static void default_trace_logger(int level, const char *msg);
+static void default_error_logger(const char *msg);
+
 static int trace_level = SYSINFO_ERROR;
+static void (*g_trace_logger)(int, const char *) = default_trace_logger;
+static void (*g_error_logger)(const char *) = default_error_logger;
+
+void
+sysinfo_set_trace_logger(void (*trace_logger)(int, const char *))
+{
+  g_trace_logger = trace_logger;
+}
 
 static void
 default_trace_logger(int level, const char *msg)
@@ -35,8 +46,6 @@ default_trace_logger(int level, const char *msg)
   if (trace_level >= level)
     puts(msg);
 }
-
-static void (*g_trace_loger)(int, const char *) = default_trace_logger;
 
 void
 sysinfo_set_trace_level(int level)
@@ -52,14 +61,44 @@ sysinfo_trace(int level, const char *fmt, ...)
 
   va_start(ap, fmt);
 
-  if (g_trace_loger)
+  if (g_trace_logger)
   {
     vsnprintf(buf, sizeof(buf), fmt, ap);
     buf[sizeof(buf) - 1] = 0;
-    g_trace_loger(level, buf);
+    g_trace_logger(level, buf);
   }
 
   va_end(ap);
+}
+
+void
+sysinfo_set_error_logger(void (*error_logger)(const char *))
+{
+  g_error_logger = error_logger;
+}
+
+void
+sysinfo_error(const char *fmt, ...)
+{
+  char buf[1024];
+  va_list ap;
+
+  va_start(ap, fmt);
+
+  if (g_error_logger)
+  {
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    buf[sizeof(buf) - 1] = 0;
+    g_error_logger(buf);
+  }
+
+  va_end(ap);
+}
+
+static void
+default_error_logger(const char *msg)
+{
+  fprintf(stderr, "ERROR: %s\n", msg);
 }
 
 static int
@@ -263,7 +302,10 @@ sysinfo_init(struct system_config **sc_out)
       {
         entry_append_child(&sc->root_entry, entry);
         add_compver_entries(sc);
+#if 0
+        /* so far not needed */
         add_cert_entries(sc);
+#endif
         add_devinfo_entries(sc);
 
         *sc_out = sc;
