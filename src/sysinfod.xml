@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<node name="/com/nokia/SystemInfo">
+  <interface name="com.nokia.SystemInfo">
+    <method name="GetConfigValue">
+      <arg type="s" name="key" direction="in" />
+      <arg type="ay" name="val" direction="out" />
+    </method>
+    <method name="GetConfigKeys">
+      <arg type="as" name="key" direction="out" />
+    </method>
+  </interface>
+</node>

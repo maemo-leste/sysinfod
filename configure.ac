@@ -1,0 +1,41 @@
+AC_INIT([sysinfod], [0.1])
+AC_CANONICAL_SYSTEM
+
+AM_CONFIG_HEADER(config.h)
+
+AM_MAINTAINER_MODE
+
+AM_INIT_AUTOMAKE
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AM_PROG_LIBTOOL
+
+AC_HEADER_STDC
+
+AC_PATH_X
+AC_PATH_XTRA
+AC_SUBST(X_CFLAGS)
+
+PKG_PROG_PKG_CONFIG
+
+#+++++++++++++++
+# Misc programs
+#+++++++++++++++
+
+AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
+AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
+
+AC_SUBST(CFLAGS)
+
+PKG_CHECK_MODULES(SYSINFOD, [glib-2.0 dbus-glib-1])
+
+AC_SUBST(SYSINFOD_LIBS)
+AC_SUBST(SYSINFOD_CFLAGS)
+
+AC_OUTPUT([
+Makefile
+src/Makefile
+sysinfo.pc
+])
+
