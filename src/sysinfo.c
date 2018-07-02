@@ -374,6 +374,7 @@ int
 sysinfo_get_keys(struct system_config *sc, char ***keys_out)
 {
   char **out;
+  char **tmp;
   int count = 0;
 
   entry_enumerate_children(sc->root_entry->children, get_count_cb, &count);
@@ -383,10 +384,12 @@ sysinfo_get_keys(struct system_config *sc, char ***keys_out)
   if (!out)
     return -ENOMEM;
 
+  tmp = out;
+
   if (entry_enumerate_children(sc->root_entry->children, get_keys_cb, &out) < 0)
     return -ENOMEM;
 
-  *keys_out = out;
+  *keys_out = tmp;
 
   return 0;
 }

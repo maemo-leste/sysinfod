@@ -31,7 +31,7 @@ entry_get_key(system_config_entry *entry)
 
     p -= l;
     memcpy(p, e->name, l);
-    *p-- = '/';
+    *--p = '/';
   }
 
   return key;
