@@ -393,3 +393,64 @@ sysinfo_get_keys(struct system_config *sc, char ***keys_out)
 
   return 0;
 }
+
+int
+sysinfo_get_value(struct system_config *sc, const char *key, uint8_t **val_out,
+                  unsigned long *len_out)
+{
+  const char *p = key;
+  system_config_entry *entry;
+  char buf[66];
+
+  sysinfo_trace(SYSINFO_TRACE, "Retrieving value for key '%s'", key);
+
+  for (p = key; *p == '/'; p++);
+
+  entry = sc->root_entry->children;
+
+  while (*p)
+  {
+    char *q = buf;
+
+    while (*p && *p != '/')
+    {
+      *q++ = *p++;
+
+      if (q == &buf[sizeof(buf) - 1])
+        return -EINVAL;
+    }
+
+    *q = 0;
+
+    if (!entry)
+      goto not_found;
+
+    while (strcasecmp(entry->name, buf))
+    {
+      entry = entry->next;
+
+      if (!entry)
+        goto not_found;
+    }
+
+    if (*p == '/')
+    {
+      p++;
+      entry = entry->children;
+    }
+  }
+
+  if (entry->get_value)
+  {
+    sysinfo_trace(SYSINFO_TRACE, "Found match for key '%s'", key);
+    return entry->get_value(entry, (void **)val_out, len_out);
+  }
+
+  sysinfo_trace(SYSINFO_TRACE, "No get_value handler for '%s'", key);
+  return -EPERM;
+
+not_found:
+  sysinfo_trace(SYSINFO_TRACE, "Config key '%s' not found", key);
+
+  return -ENOENT;
+}
